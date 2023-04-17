@@ -17,11 +17,7 @@ class Agencia():
 
   def listar_contas(self):
     for conta in self.contas:
-        linha = f"""\
-            Agência:\t{self.AGENCIA}
-            C/C:\t\t{conta.numero_conta}
-            Titular:\t{conta.usuario.nome}
-        """
+        linha = f"Agência:\t{self.AGENCIA} C/C:\t\t{conta.numero_conta} Titular:\t{conta.usuario.nome}"
         print("=" * 100)
         print(linha)
 
@@ -51,12 +47,17 @@ class Agencia():
   def filtrar_usuario(self, cpf):
     usuarios_filtrados = [usuario for usuario in self.usuarios if usuario.cpf == cpf]
     return usuarios_filtrados[0] if usuarios_filtrados else None
+  
+  def listar_usuarios(self):
+    for usuario in self.usuarios:
+        print("=" * 100)
+        print(usuario)
 
 class Conta():
   def __init__(self,numero_conta,usuario):
     self.LIMITE_VALOR_SAQUE=500.0
     self.LIMITE_QUANTIDADE_SAQUE=3
-    self.saldo=0.0
+    self._saldo=0.0
     self.extrato=''
     self.numero_de_saques=0
     self.numero_conta=numero_conta
@@ -64,14 +65,14 @@ class Conta():
 
   def __str__(self):
         extrato_aux = "Não foram realizadas movimentações." if self.extrato == ''  else self.extrato
-        return f'{extrato_aux}\nSaldo: R$ {self.saldo:.2f}'
+        return f'{extrato_aux}\nSaldo: R$ {self._saldo:.2f}'
 
   def depositar(self):
     valor = input('digite o valor depositado ->')
     if str(valor).isdecimal:
       aux=float(valor)
       if aux>0:
-        self.saldo+=aux
+        self._saldo+=aux
         self.extrato+=f'R$ {aux:.2f} D\n'
       else:
         print('valor invalido para deposito')
@@ -84,14 +85,14 @@ class Conta():
       aux=float(valor)
       if aux<=0:
         print('valor invalido para saque')
-      elif self.saldo<aux:
+      elif self._saldo<aux:
         print('falta de saldo na conta')
       elif aux>self.LIMITE_VALOR_SAQUE:
         print(f'limite do valor para saque ultrapassa o limite diario de R${self.LIMITE_VALOR_SAQUE:.2f}')
       elif self.numero_de_saques>=self.LIMITE_QUANTIDADE_SAQUE:
         print(f'limite de saques diarios atigido: {self.LIMITE_QUANTIDADE_SAQUE}')
       else:
-        self.saldo-=aux
+        self._saldo-=aux
         self.extrato+=f'R$ {aux:.2f} S\n'
         self.numero_de_saques+=1
     else:
@@ -102,6 +103,12 @@ class Usuario():
     self.cpf=cpf
     self.nome=nome
     self.data_nascimento=data_nascimento
+  
+  def __del__(self):
+    print(f'Removendo instancia da classe {self.__class__.__name__}')
+
+  def __str__(self):
+    return f"{self.__class__.__name__}:{', '.join([f'{chave}={valor}' for chave, valor in self.__dict__.items()])}"
 
 def main():
   menu_agencia = """\n
@@ -109,7 +116,8 @@ def main():
     [nc]\tNova conta
     [lc]\tListar contas
     [sc]\tSelecionar conta
-    [nu]\tNovo usuário
+    [nu]\tNovo usuario
+    [lu]\tListar usuarios
     [q] \tSair
     => """
   
@@ -124,32 +132,34 @@ def main():
   agencia = Agencia('0001')
   conta=None
   while True:
-      opcao=input(menu_agencia) if conta is None else input(menu_conta)
-      if opcao=='d':
-          if conta is None:
-            conta=agencia.selecionar_conta()
-          conta.depositar()
-      elif opcao=='s':
-          if conta is None:
-            conta=agencia.selecionar_conta()
-          conta.sacar()
-      elif opcao=='e':
-          if conta is None:
-            conta=agencia.selecionar_conta()
-          print(conta)
-      elif opcao=="sc":
-         conta=agencia.selecionar_conta()
+    if conta is None:
+      opcao= input(menu_agencia)
+      if opcao=="sc":
+        conta=agencia.selecionar_conta()
       elif opcao == "nu":
-          agencia.criar_usuario()
+        agencia.criar_usuario()
       elif opcao == "nc":
-          agencia.criar_conta()
+        agencia.criar_conta()
       elif opcao == "lc":
-          agencia.listar_contas()
-      elif opcao=='v':
-         conta=None
+        agencia.listar_contas()
+      elif opcao == "lu":
+        agencia.listar_usuarios()
       elif opcao=='q':
-          break
+        break
       else:
-          print('opcao invalida, tente novamente')
+        print('opcao invalida, tente novamente')
+    else:
+      opcao=input(menu_conta)
+      if opcao=='d':
+        conta.depositar()
+      elif opcao=='s':
+        conta.sacar()
+      elif opcao=='e':
+        print(conta)
+      elif opcao=='v':
+        conta=None
+      else:
+        print('opcao invalida, tente novamente')
+
 
 main()
