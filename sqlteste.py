@@ -1,9 +1,9 @@
-from typing import List
-from typing import Optional
-from sqlalchemy import ForeignKey
-from sqlalchemy import String
-from sqlalchemy import create_engine
-from sqlalchemy import inspect
+from typing import List, Optional
+
+from sqlalchemy import ForeignKey, Column
+from sqlalchemy import String, Integer
+from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy import inspect, select, func
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -36,7 +36,7 @@ class Address(Base):
 print(User.__tablename__)
 print(Address.__tablename__)
 
-engine = create_engine('sqlite://')
+engine = create_engine('sqlite:///teste.db')
 Base.metadata.create_all(engine)
 
 inspector_engine = inspect(engine)
@@ -51,6 +51,39 @@ with Session(engine) as session:
         addresses=[Address(email_address='teste@gmail.com'),Address(email_address='teste.ti@gmail.com')]
     )
 
-    session.add(tiago)
+    # session.add(tiago)
+    # session.commit()
 
-    session.commit()
+stmt = select(User).where(User.name.in_(['tiago','jordino','maria'])).order_by(User.name.desc())
+for user in session.scalars(stmt):
+    print(user)
+
+stmt_address = select(Address).where(Address.user_id.in_([1]))
+for address in session.scalars(stmt_address):
+    print(address)
+
+stmt_join=select(User.name, Address.email_address).join_from(User,Address)
+print(stmt_join)
+results=engine.connect().execute(stmt_join).fetchall()
+for result in results: #session.scalars(stmt_join):
+    print(result)
+
+stmt_count = select(func.count('*')).select_from(User)
+for result in session.scalars(stmt_count):
+    print(result)
+
+metadata_obj=MetaData()
+user = Table(
+    'user',
+    metadata_obj,
+    Column('user_id', Integer, primary_key=True),
+    Column('user_name', String, nullable=False),
+    Column('user_mail', String),
+    Column('user_nick', String, nullable=False)
+)
+
+for table in metadata_obj.sorted_tables:
+    print(table,metadata_obj.info, metadata_obj.tables)
+
+engine2 = create_engine('sqlite:///memory.db')
+metadata_obj.create_all(engine2)
